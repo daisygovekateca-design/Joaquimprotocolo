@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="pt">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>J & N — Controlo do Protocolo</title>
+  
+  <style>
+    :root {
+      --bg-color: #FAF8F5;          /* Creme suave de fundo */
+      --card-bg: #FFFFFF;           /* Branco puro para cartões */
+      --primary-gold: #C5A059;      /* Dourado elegante */
+      --dark-gold: #9E7D3B;         /* Dourado escuro para destaques/botões */
+      --light-gold: #F4EAD2;        /* Creme dourado claro */
+      --text-color: #333333;        /* Cinza escuro */
+      --text-muted: #777777;        /* Texto secundário */
+      --danger-red: #D9534F;        /* Vermelho para apagar */
+      --border-radius: 12px;
+      --box-shadow: 0 4px 15px rgba(197, 160, 89, 0.15);
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    }
+
+    body {
+      background-color: var(--bg-color);
+      color: var(--text-color);
+      padding: 20px 15px;
+      max-width: 650px;
+      margin: 0 auto;
+    }
+
+    /* Tela de Bloqueio por PIN */
+    #pinOverlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 100vh;
+      background-color: rgba(250, 248, 245, 0.96);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 9999;
+      padding: 20px;
+    }
+
+    .pin-card {
+      background: var(--card-bg);
+      border: 2px solid var(--primary-gold);
+      padding: 30px 20px;
+      border-radius: var(--border-radius);
+      box-shadow: var(--box-shadow);
+      text-align: center;
+      width: 100%;
+      max-width: 350px;
+    }
+
+    .pin-card h2 {
+      color: var(--dark-gold);
+      margin-bottom: 8px;
+    }
+
+    .pin-card input {
+      width: 100%;
+      padding: 12px;
+      font-size: 1.2rem;
+      text-align: center;
+      letter-spacing: 5px;
+      border: 1px solid var(--primary-gold);
+      border-radius: 8px;
+      margin: 15px 0;
+      outline: none;
+    }
+
+    /* Cabeçalho */
+    .header {
+      text-align: center;
+      margin-bottom: 25px;
+    }
+
+    .header h1 {
+      color: var(--dark-gold);
+      font-size: 1.8rem;
+      letter-spacing: 1px;
+    }
+
+    .header p {
+      color: var(--text-muted);
+      font-size: 0.9rem;
+      margin-top: 4px;
+    }
+
+    /* Cartões */
+    .card {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 18px;
+      margin-bottom: 20px;
+      box-shadow: var(--box-shadow);
+      border: 1px solid rgba(197, 160, 89, 0.2);
+    }
+
+    .card h3 {
+      color: var(--dark-gold);
+      margin-bottom: 12px;
+      font-size: 1.1rem;
+    }
+
+    .form-grid {
+      display: grid;
+      grid-template-columns: 2fr 1.5fr 1fr auto;
+      gap: 10px;
+    }
+
+    @media (max-width: 600px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+
+    input, select {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid #E0D6C3;
+      border-radius: 8px;
+      font-size: 0.95rem;
+      outline: none;
+      background-color: #FAF8F5;
+    }
+
+    input:focus, select:focus {
+      border-color: var(--primary-gold);
+      background-color: #FFFFFF;
+    }
+
+    .btn-gold {
+      background: linear-gradient(135deg, var(--primary-gold), var(--dark-gold));
+      color: white;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      font-weight: bold;
+      font-size: 0.95rem;
+      cursor: pointer;
+      transition: opacity 0.2s;
+    }
+
+    .btn-gold:active {
+      opacity: 0.85;
+    }
+
+    /* Abas de Navegação */
+    .tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 15px;
+    }
+
+    .tab-btn {
+      flex: 1;
+      padding: 10px;
+      border: 1px solid var(--primary-gold);
+      background: transparent;
+      color: var(--dark-gold);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 600;
+      cursor: pointer;
+    }
+
+    .tab-btn.active {
+      background: var(--primary-gold);
+      color: white;
+    }
+
+    /* Lista de Mesas e Convidados */
+    .mesa-container {
+      background: var(--card-bg);
+      border-radius: var(--border-radius);
+      padding: 15px;
+      margin-bottom: 15px;
+      border-left: 5px solid var(--primary-gold);
+      box-shadow: var(--box-shadow);
+    }
+
+    .mesa-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+      border-bottom: 1px solid var(--light-gold);
+      padding-bottom: 8px;
+    }
+
+    .mesa-title {
+      font-weight: bold;
+      color: var(--dark-gold);
+      font-size: 1.1rem;
+    }
+
+    .convidado-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px dashed #EEE;
+      gap: 10px;
+    }
+
+    .convidado-item:last-child {
+      border-bottom: none;
+    }
+
+    .convidado-info {
+      flex: 1;
+    }
+
+    .convidado-info strong {
+      display: block;
+      color: var(--text-color);
+      font-size: 0.95rem;
+    }
+
+    .convidado-info span {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+    }
+
+    .convidado-acoes {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .select-mesa {
+      padding: 5px 8px;
+      font-size: 0.8rem;
+      max-width: 110px;
+    }
+
+    .badge-status {
+      padding: 6px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      cursor: pointer;
+      white-space: nowrap;
+      border: none;
+    }
+
+    .status-aguardando {
+      background-color: #FFF3CD;
+      color: #856404;
+    }
+
+    .status-acomodado {
+      background-color: #D4EDDA;
+      color: #155724;
+    }
+
+    .btn-delete {
+      background: none;
+      border: none;
+      color: var(--danger-red);
+      font-size: 1.1rem;
+      cursor: pointer;
+      padding: 2px 4px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Tela de Bloqueio por PIN -->
+  <div id="pinOverlay">
+    <div class="pin-card">
+      <h2>Acesso Restrito</h2>
+      <p style="font-size: 0.9rem; color: var(--text-muted);">Digite o PIN do protocolo para continuar:</p>
+      <form onsubmit="validarPIN(event)">
+        <input type="password" id="pinInput" placeholder="••••" maxlength="6" autofocus required>
+        <button type="submit" class="btn-gold" style="width: 100%;">Entrar</button>
+      </form>
+    </div>
+  </div>
+
+  <div class="container">
+    <!-- Cabeçalho -->
+    <div class="header">
+      <h1>J & N — Controlo do Protocolo</h1>
+      <p>Assento de Convidados (24.10.2026)</p>
+    </div>
+
+    <!-- Formulário de Adição -->
+    <div class="card">
+      <h3>+ Adicionar Convidado</h3>
+      <form id="addForm" onsubmit="adicionarConvidado(event)" class="form-grid">
+        <input type="text" id="novoNome" placeholder="Nome do Convidado" required>
+        <input type="text" id="novosAcompanhantes" placeholder="Acompanhantes (ex: +1)">
+        <input type="text" id="novaMesa" placeholder="Mesa (ex: Mesa 1)" required>
+        <button type="submit" class="btn-gold">Adicionar</button>
+      </form>
+    </div>
+
+    <!-- Campo de Pesquisa -->
+    <div style="display: flex; gap: 8px; margin-bottom: 15px;">
+      <input type="text" id="searchInput" oninput="filtrarDados()" placeholder="Pesquisar convidado ou mesa...">
+      <button onclick="limparPesquisa()" style="width: auto; padding: 0 15px; background: #E0D6C3; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; color: #555;">Limpar</button>
+    </div>
+
+    <!-- Filtros por Aba -->
+    <div class="tabs">
+      <button id="btnTodas" onclick="alternarVisao('todas')" class="tab-btn active">Todas as Mesas</button>
+      <button id="btnAcomodados" onclick="alternarVisao('acomodados')" class="tab-btn">Acomodados</button>
+      <button id="btnPendentes" onclick="alternarVisao('pendentes')" class="tab-btn">Pendentes</button>
+    </div>
+
+    <!-- Lista Dinâmica -->
+    <div id="listaConteudo"></div>
+  </div>
+
+  <!-- SDK do Firebase -->
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.8.0/firebase-database-compat.js"></script>
+
+  <!-- Ficheiro de Apoio Estático -->
+  <script src="convidados.js"></script>
+
+  <script>
+    // Validação do PIN de Acesso
+    function validarPIN(e) {
+      if(e) e.preventDefault();
+      const input = document.getElementById('pinInput').value.trim();
+      const pinCorreto = "2610";
+
+      if (input === pinCorreto) {
+        sessionStorage.setItem('protocoloJoaquim_autenticado', 'true');
+        document.getElementById('pinOverlay').style.setProperty('display', 'none', 'important');
+      } else {
+        alert('PIN incorreto! Tente novamente.');
+        document.getElementById('pinInput').value = '';
+      }
+    }
+
+    if (sessionStorage.getItem('protocoloJoaquim_autenticado') === 'true') {
+      document.getElementById('pinOverlay').style.display = 'none';
+    }
+
+    // Configuração do Firebase
+    const firebaseConfig = {
+      apiKey: "AIzaSyDcCslR0EgE9COvwQdwhBSPK5if1j_eHwo",
+      authDomain: "protocolo-da-d21f8.firebaseapp.com",
+      databaseURL: "https://protocolo-da-d21f8-default-rtdb.europe-west1.firebasedatabase.app",
+      projectId: "protocolo-da-d21f8",
+      storageBucket: "protocolo-da-d21f8.firebasestorage.app",
+      messagingSenderId: "144779684676",
+      appId: "1:144779684676:web:64f2cfd7bb549c5becc511",
+      measurementId: "G-5SSMF9F6X7"
+    };
+
+    if (!firebase.apps.length) {
+      firebase.initializeApp(firebaseConfig);
+    }
+    const dbRef = firebase.database().ref('dadosMesasJoaquim');
+
+    let visaoAtual = 'todas';
+    let dadosMesas = [];
+
+    // Ouvinte em tempo real no Firebase com Fusão (Merge)
+    dbRef.on('value', (snapshot) => {
+      const dataFirebase = snapshot.val() || [];
+      const dadosBase = (typeof dadosMesasIniciais !== 'undefined') ? dadosMesasIniciais : [];
+
+      let mesasMapeadas = {};
+
+      // 1. Carrega base estática inicial
+      dadosBase.forEach(itemMesa => {
+        mesasMapeadas[itemMesa.mesa] = {
+          mesa: itemMesa.mesa,
+          convidados: [...itemMesa.convidados]
+        };
+      });
+
+      // 2. Funde alterações vindas do Firebase
+      if (Array.isArray(dataFirebase)) {
+        dataFirebase.forEach(itemMesaFB => {
+          if (!mesasMapeadas[itemMesaFB.mesa]) {
+            mesasMapeadas[itemMesaFB.mesa] = { mesa: itemMesaFB.mesa, convidados: [] };
+          }
+
+          itemMesaFB.convidados.forEach(convFB => {
+            const indexExistente = mesasMapeadas[itemMesaFB.mesa].convidados.findIndex(c => c.id === convFB.id);
+            if (indexExistente !== -1) {
+              mesasMapeadas[itemMesaFB.mesa].convidados[indexExistente] = convFB;
+            } else {
+              mesasMapeadas[itemMesaFB.mesa].convidados.push(convFB);
+            }
+          });
+        });
+      }
+
+      dadosMesas = Object.values(mesasMapeadas);
+      filtrarDados();
+    });
+
+    function salvarNoFirebase() {
+      dbRef.set(dadosMesas);
+    }
+
+    function obterTodasMesas() {
+      return dadosMesas.map(m => m.mesa);
+    }
+
+    function alternarVisao(visao) {
+      visaoAtual = visao;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      if (visao === 'todas') document.getElementById('btnTodas').classList.add('active');
+      if (visao === 'acomodados') document.getElementById('btnAcomodados').classList.add('active');
+      if (visao === 'pendentes') document.getElementById('btnPendentes').classList.add('active');
+      filtrarDados();
+    }
+
+    function alternarStatus(id) {
+      dadosMesas.forEach(m => {
+        const convidado = m.convidados.find(c => c.id === id);
+        if (convidado) {
+          convidado.acomodado = !convidado.acomodado;
+        }
+      });
+      salvarNoFirebase();
+    }
+
+    function mudarMesa(idConvidado, novaMesaNome) {
+      let convidadoEncontrado = null;
+
+      dadosMesas.forEach(grupo => {
+        const index = grupo.convidados.findIndex(c => c.id === idConvidado);
+        if (index !== -1) {
+          convidadoEncontrado = grupo.convidados.splice(index, 1)[0];
+        }
+      });
+
+      if (convidadoEncontrado) {
+        let mesaDestino = dadosMesas.find(m => m.mesa === novaMesaNome);
+        if (!mesaDestino) {
+          mesaDestino = { mesa: novaMesaNome, convidados: [] };
+          dadosMesas.push(mesaDestino);
+        }
+        mesaDestino.convidados.push(convidadoEncontrado);
+      }
+
+      salvarNoFirebase();
+    }
+
+    function adicionarConvidado(e) {
+      e.preventDefault();
+
+      const nome = document.getElementById('novoNome').value.trim();
+      const acompanhantes = document.getElementById('novosAcompanhantes').value.trim() || "Sem acompanhantes";
+      const nomeMesa = document.getElementById('novaMesa').value.trim();
+
+      if (!nome || !nomeMesa) return;
+
+      const novoConvidado = {
+        id: Date.now(),
+        nome: nome,
+        acompanhantes: acompanhantes,
+        acomodado: false
+      };
+
+      let grupoMesa = dadosMesas.find(m => m.mesa.toLowerCase() === nomeMesa.toLowerCase());
+
+      if (grupoMesa) {
+        grupoMesa.convidados.push(novoConvidado);
+      } else {
+        dadosMesas.push({
+          mesa: nomeMesa,
+          convidados: [novoConvidado]
+        });
+      }
+
+      document.getElementById('addForm').reset();
+      salvarNoFirebase();
+    }
+
+    function removerConvidado(mesaNome, convidadoId) {
+      if (!confirm("Tem certeza que deseja remover este convidado da lista?")) return;
+
+      const mesa = dadosMesas.find(m => m.mesa === mesaNome);
+      if (mesa) {
+        mesa.convidados = mesa.convidados.filter(c => c.id !== convidadoId);
+        if (mesa.convidados.length === 0) {
+          dadosMesas = dadosMesas.filter(m => m.mesa !== mesaNome);
+        }
+        salvarNoFirebase();
+      }
+    }
+
+    function limparPesquisa() {
+      document.getElementById('searchInput').value = '';
+      filtrarDados();
+    }
+
+    function filtrarDados() {
+      const termo = document.getElementById('searchInput').value.toLowerCase();
+      const container = document.getElementById('listaConteudo');
+      container.innerHTML = '';
+      const listaMesas = obterTodasMesas();
+
+      dadosMesas.forEach(grupoMesa => {
+        const correspondeMesa = grupoMesa.mesa.toLowerCase().includes(termo);
+
+        const convidadosFiltrados = grupoMesa.convidados.filter(c => {
+          const correspondeNome = c.nome.toLowerCase().includes(termo);
+          const atendeFiltroVisao = 
+            visaoAtual === 'todas' ? true :
+            visaoAtual === 'acomodados' ? c.acomodado : !c.acomodado;
+
+          return (correspondeNome || correspondeMesa) && atendeFiltroVisao;
+        });
+
+        if (convidadosFiltrados.length > 0) {
+          const totalAcomodados = convidadosFiltrados.filter(c => c.acomodado).length;
+
+          let mesaHTML = `
+            <div class="mesa-container">
+              <div class="mesa-header">
+                <span class="mesa-title">${grupoMesa.mesa}</span>
+                <span style="font-size: 0.85rem; color: var(--text-muted);">${totalAcomodados}/${convidadosFiltrados.length} acomodados</span>
+              </div>
+          `;
+
+          convidadosFiltrados.forEach(c => {
+            let opcoesMesa = listaMesas.map(m => 
+              `<option value="${m}" ${m === grupoMesa.mesa ? 'selected' : ''}>${m}</option>`
+            ).join('');
+
+            mesaHTML += `
+              <div class="convidado-item">
+                <div class="convidado-info">
+                  <strong>${c.nome}</strong>
+                  <span>${c.acompanhantes}</span>
+                </div>
+                <div class="convidado-acoes">
+                  <select class="select-mesa" onchange="mudarMesa(${c.id}, this.value)">
+                    ${opcoesMesa}
+                  </select>
+                  <button onclick="alternarStatus(${c.id})" class="badge-status ${c.acomodado ? 'status-acomodado' : 'status-aguardando'}">
+                    ${c.acomodado ? '✓ Acomodado' : 'Aguardando'}
+                  </button>
+                  <button onclick="removerConvidado('${grupoMesa.mesa}', ${c.id})" class="btn-delete" title="Apagar Convidado">🗑️</button>
+                </div>
+              </div>
+            `;
+          });
+
+          mesaHTML += `</div>`;
+          container.innerHTML += mesaHTML;
+        }
+      });
+
+      if (container.innerHTML === '') {
+        container.innerHTML = `<p style="text-align: center; color: var(--text-muted); margin-top: 20px;">Nenhum convidado ou mesa encontrada.</p>`;
+      }
+    }
+  </script>
+</body>
+</html>
